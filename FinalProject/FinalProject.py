@@ -3,6 +3,9 @@ from streamlit_lottie import st_lottie
 import pandas as pd
 import numpy as np
 import requests
+import alpha_vantage.timeseries as ts
+import plotly.graph_objs as go
+
 
 api_key="AGZF6FYUWEB9KXYS"
 
@@ -20,6 +23,11 @@ def fetch_financial_data(symbol):
     url = f'https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={api_key}'
     response = requests.get(url)
     return response.json()
+
+def fetch_stock_data(symbol):
+    av = ts.TimeSeries(key=api_key, output_format='pandas')
+    data, meta_data = av.get_daily(symbol=symbol, outputsize='full')
+    return data
 
 col1, col2= st.columns(2)
 with col1:
@@ -48,3 +56,19 @@ with col1:
 
 with col2:
     st_lottie(lottie_url, height=400, width='100%', key="line")
+
+if symbol:
+    stock_data = fetch_stock_data(symbol)
+    if not stock_data.empty:
+        candlestick = go.Candlestick(x=stock_data.index,
+                                        open=stock_data['1. open'],
+                                        high=stock_data['2. high'],
+                                        low=stock_data['3. low'],
+                                        close=stock_data['4. close'])
+        layout = go.Layout(title=f'Stock Chart for {symbol}',
+                            xaxis=dict(title='Date'),
+                            yaxis=dict(title='Stock Price'))
+        fig = go.Figure(data=[candlestick], layout=layout)
+        st.plotly_chart(fig)
+    else:
+        st.warning("No historical stock data found for the given symbol.")
