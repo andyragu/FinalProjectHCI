@@ -52,23 +52,33 @@ with col1:
             df = pd.DataFrame([filtered_data])
             st.dataframe(df, hide_index=True)
         else:
-            st.error("No data found for the given symbol.")  # Displaying the data as JSON. You can format it as needed.
+            st.error("No data found for the given symbol.")
+
 
 with col2:
     st_lottie(lottie_url, height=400, width='100%', key="line")
 
 if symbol:
+
     stock_data = fetch_stock_data(symbol)
+    
     if not stock_data.empty:
-        line_chart = go.Figure()
-        line_chart.add_trace(go.Scatter(x=stock_data.index, y=stock_data['4. close'], mode='lines', name='Closing Price'))
-        line_chart.update_layout(title=f'Stock Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Stock Price')
+        show_line_chart = st.checkbox("Show Line Graph", value=True)
 
-        volume_chart = go.Figure()
-        volume_chart.add_trace(go.Bar(x=stock_data.index, y=stock_data['5. volume'], name='Volume'))
-        volume_chart.update_layout(title=f'Volume Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Volume')
+        if show_line_chart:
+            line_chart = go.Figure()
+            line_chart.add_trace(go.Scatter(x=stock_data.index, y=stock_data['4. close'], mode='lines', name='Closing Price'))
+            line_chart.update_layout(title=f'Stock Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Stock Price')
+            st.plotly_chart(line_chart)
 
-        st.plotly_chart(line_chart)
-        st.plotly_chart(volume_chart)
+        show_volume_chart = st.checkbox("Show Volume Graph", value=True)
+        
+        if show_volume_chart:
+                volume_chart = go.Figure()
+                volume_chart.add_trace(go.Bar(x=stock_data.index, y=stock_data['5. volume'], name='Volume'))
+                volume_chart.update_layout(title=f'Volume Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Volume')
+                st.plotly_chart(volume_chart)
+
+        
     else:
         st.warning("No historical stock data found for the given symbol.")
