@@ -60,15 +60,15 @@ with col2:
 if symbol:
     stock_data = fetch_stock_data(symbol)
     if not stock_data.empty:
-        candlestick = go.Candlestick(x=stock_data.index,
-                                        open=stock_data['1. open'],
-                                        high=stock_data['2. high'],
-                                        low=stock_data['3. low'],
-                                        close=stock_data['4. close'])
-        layout = go.Layout(title=f'Stock Chart for {symbol}',
-                            xaxis=dict(title='Date'),
-                            yaxis=dict(title='Stock Price'))
-        fig = go.Figure(data=[candlestick], layout=layout)
-        st.plotly_chart(fig)
+        line_chart = go.Figure()
+        line_chart.add_trace(go.Scatter(x=stock_data.index, y=stock_data['4. close'], mode='lines', name='Closing Price'))
+        line_chart.update_layout(title=f'Stock Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Stock Price')
+
+        volume_chart = go.Figure()
+        volume_chart.add_trace(go.Bar(x=stock_data.index, y=stock_data['5. volume'], name='Volume'))
+        volume_chart.update_layout(title=f'Volume Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Volume')
+
+        st.plotly_chart(line_chart)
+        st.plotly_chart(volume_chart)
     else:
         st.warning("No historical stock data found for the given symbol.")
