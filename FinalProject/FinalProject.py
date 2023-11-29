@@ -5,7 +5,7 @@ import numpy as np
 import requests
 import alpha_vantage.timeseries as ts
 import plotly.graph_objs as go
-
+from datetime import date
 
 api_key="AGZF6FYUWEB9KXYS"
 
@@ -42,7 +42,7 @@ st.set_page_config(
 if 'mode' not in st.session_state:
     st.session_state['mode'] = 'Light'
 
-if st.button(f'Switch to {"Dark" if st.session_state.mode == "Light" else "Light"} Mode'):
+if st.toggle(f'Switch to {"Dark" if st.session_state.mode == "Light" else "Light"} Mode'):
     st.session_state.mode = 'Dark' if st.session_state.mode == 'Light' else 'Light'
 
 # Apply styles based on the mode
@@ -51,8 +51,7 @@ if st.session_state.mode == 'Dark':
     st.markdown("""
         <style>
         .main {
-            textColor: white;
-            background-color: #000000;
+            background-color: #222831;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -61,8 +60,7 @@ elif st.session_state.mode == 'Light':
     st.markdown("""
         <style>
         .main {
-            textColor: #000000;
-            background-color: #FFF;
+            background-color: #EEEEEE;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -150,7 +148,7 @@ def loadEMA():
     df['EMA'] = df['EMA'].astype(float)
     return df
 
-option = st.radio('View technical indicators', ['SMA', 'EMA'])
+option = st.radio('View technical indicators', ['SMA', 'EMA', 'Disabled'])
 
 if option is 'SMA':
     df_sma = loadSMA()
@@ -158,8 +156,47 @@ if option is 'SMA':
     with st.expander("What is the SMA?"):
         st.write("The Simple Moving Average (SMA) is a widely used technical indicator in financial analysis, particularly in the analysis of stock and other asset prices.")
 
-else:
+elif option is 'EMA':
     df_ema = loadEMA()
     st.line_chart(df_ema['EMA'])
     with st.expander("What is the EMA?"):
         st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
+
+
+# HERE IS A WORK IN PROGRESS THIS IS SUPER BROKEN
+# Trying to use the range of dates to display advanced analytics between stock tickers
+def add_option(option):
+    if option and option not in st.session_state.options:
+        st.session_state.options.append(option)
+
+# Initialize session state
+if 'options' not in st.session_state:
+    st.session_state.options = []
+
+# Text input for user to type a new option
+new_option = st.text_input("Enter a new option")
+
+# Button to add the new option
+if st.button("Add"):
+    add_option(new_option)
+    st.write(st.session_state.options)
+
+
+def advancedAnalytics(selected_range):
+    url = f'https://alphavantageapi.co/timeseries/running_analytics?SYMBOLS={st.session_state.options}&RANGE={selected_range}&INTERVAL=DAILY&OHLC=close&WINDOW_SIZE=20&CALCULATIONS=MEAN,STDDEV(annualized=True)&apikey={api_key}'
+    r = requests.get(url)
+    data = r.json()
+
+    symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
+    df = pd.DataFrame(symbolAnalytics)
+    return df
+
+
+# Date range input
+selected_range = st.date_input("Select the range in which you want to see the company's analytics",  value=(date.today(), date.today()), format="YYYY-MM-DD")
+
+if selected_range:
+    analytics_df = advancedAnalytics(selected_range)
+    st.text_area("Analytics", value=str(analytics_df), height=300)
+else:
+    st.error("Please select a valid date range.")
