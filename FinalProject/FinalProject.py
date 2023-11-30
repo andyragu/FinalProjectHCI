@@ -162,28 +162,24 @@ elif option is 'EMA':
     with st.expander("What is the EMA?"):
         st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
 
+if 'tickers' not in st.session_state:
+    st.session_state['tickers'] = []
 
-# HERE IS A WORK IN PROGRESS THIS IS SUPER BROKEN
-# Trying to use the range of dates to display advanced analytics between stock tickers
-def add_option(option):
-    if option and option not in st.session_state.options:
-        st.session_state.options.append(option)
+# Text input for the ticker symbol
+ticker_symbol = st.text_input("Enter the ticker symbol")
 
-# Initialize session state
-if 'options' not in st.session_state:
-    st.session_state.options = []
+# Button to add the ticker to the list
+if st.button("Add Ticker"):
+    if ticker_symbol:
+        st.session_state['tickers'].append(ticker_symbol)
+        st.success(f"Ticker {ticker_symbol} added!")
+    else:
+        st.error("Please enter a ticker symbol.")
 
-# Text input for user to type a new option
-new_option = st.text_input("Enter a new option")
+tickers_str = ','.join(st.session_state['tickers'])
 
-# Button to add the new option
-if st.button("Add"):
-    add_option(new_option)
-    st.write(st.session_state.options)
-
-
-def advancedAnalytics(selected_range):
-    url = f'https://alphavantageapi.co/timeseries/running_analytics?SYMBOLS={st.session_state.options}&RANGE={selected_range}&INTERVAL=DAILY&OHLC=close&WINDOW_SIZE=20&CALCULATIONS=MEAN,STDDEV(annualized=True)&apikey={api_key}'
+def advancedAnalytics(start_date, end_date):
+    url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
     r = requests.get(url)
     data = r.json()
 
@@ -193,10 +189,12 @@ def advancedAnalytics(selected_range):
 
 
 # Date range input
-selected_range = st.date_input("Select the range in which you want to see the company's analytics",  value=(date.today(), date.today()), format="YYYY-MM-DD")
+d = st.date_input("Select the range in which you want to see the company's analytics",  value=(date.today(), date.today()), format="YYYY-MM-DD")
 
-if selected_range:
-    analytics_df = advancedAnalytics(selected_range)
-    st.text_area("Analytics", value=str(analytics_df), height=300)
+start_date, end_date = d
+
+if start_date and end_date:
+    analytics_df = advancedAnalytics(start_date, end_date)
+    st.table(analytics_df)
 else:
     st.error("Please select a valid date range.")
