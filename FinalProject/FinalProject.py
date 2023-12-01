@@ -7,7 +7,7 @@ import alpha_vantage.timeseries as ts
 import plotly.graph_objs as go
 from datetime import date
 from geopy.geocoders import Nominatim
-import urllib.parse
+import csv
 
 api_key="AGZF6FYUWEB9KXYS"
 
@@ -41,31 +41,6 @@ st.set_page_config(
     page_title="Financity"
 )
         
-if 'mode' not in st.session_state:
-    st.session_state['mode'] = 'Light'
-
-if st.toggle(f'Switch to {"Dark" if st.session_state.mode == "Light" else "Light"} Mode'):
-    st.session_state.mode = 'Dark' if st.session_state.mode == 'Light' else 'Light'
-
-# Apply styles based on the mode
-if st.session_state.mode == 'Dark':
-    # Apply the dark theme
-    st.markdown("""
-        <style>
-        .main {
-            background-color: #222831;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-elif st.session_state.mode == 'Light':
-    # Apply the light theme with black text
-    st.markdown("""
-        <style>
-        .main {
-            background-color: #EEEEEE;
-        }
-        </style>
-        """, unsafe_allow_html=True)
     
 def get_latitude_longitude(location_of_interest):
     geolocator = Nominatim(user_agent="financity")
@@ -78,42 +53,48 @@ def get_latitude_longitude(location_of_interest):
 col1, col2= st.columns(2)
 
 with col1:
-    st.title("financity")
+    st.title(":blue[financity]")
     st.subheader("all your financial data in one place.")
-    
-    # User inputs the stock symbol
-    symbol = st.text_input('Ticker Symbol', '')
 
-    # Fetch and display data when a symbol is entered
-    if symbol:
-        data = fetch_financial_data(symbol)
-        if data:
-            # Define the keys you are interested in
-            keys_of_interest = ['Symbol', 'AssetType', 'Name', 'Sector', 'Industry', 'Country', 'Address']
+    st.markdown("Financity makes stock analysis a breeze! Just type in your ticker, and voilà – all the financial insights you need at your fingertips. It's as simple as 1, 2, 3 – :blue[enter, explore, excel!]")
 
-            # Extract these keys and values
-            filtered_data = {key: data.get(key, 'N/A') for key in keys_of_interest}
-
-            # Convert filtered data to DataFrame
-            df = pd.DataFrame([filtered_data])
-            st.dataframe(df, hide_index=True)
-            
-            # Get latitude and longitude for the address
-            address = data.get('Address', None)
-            if address:
-                latitude, longitude = get_latitude_longitude(address)
-                map_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
-                st.map(map_data)
-            else:
-                st.write("No address available.")
-
-            st.success(f"Successfully fetched data for {symbol.upper()}")
-        else:
-            st.error(f"No data found for the given symbol: {symbol.upper()}")
 
 
 with col2:
     st_lottie(lottie_url, height=400, width='100%', key="line")
+
+st.divider()
+
+# User inputs the stock symbol
+st.subheader(":blue[Let's Get Started!]")
+symbol = st.text_input('Ticker Symbol', '')
+
+# Fetch and display data when a symbol is entered
+if symbol:
+    data = fetch_financial_data(symbol)
+    if data:
+        # Define the keys you are interested in
+        keys_of_interest = ['Symbol', 'AssetType', 'Name', 'Sector', 'Industry', 'Country', 'Address']
+
+        # Extract these keys and values
+        filtered_data = {key: data.get(key, 'N/A') for key in keys_of_interest}
+
+        # Convert filtered data to DataFrame
+        df = pd.DataFrame([filtered_data])
+        st.dataframe(df, hide_index=True)
+        
+        # Get latitude and longitude for the address
+        address = data.get('Address', None)
+        if address:
+            latitude, longitude = get_latitude_longitude(address)
+            map_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
+            st.map(map_data)
+        else:
+            st.write("No address available.")
+
+        st.success(f"Successfully fetched data for {symbol.upper()}")
+    else:
+        st.error(f"No data found for the given symbol: {symbol.upper()}")
 
 if symbol:
 
@@ -167,62 +148,88 @@ def loadEMA():
     df['EMA'] = df['EMA'].astype(float)
     return df
 
-option = st.radio('View technical indicators', ['SMA', 'EMA', 'Disabled'])
 
-if option is 'SMA':
-    df_sma = loadSMA()
-    st.line_chart(df_sma['SMA'])
-    with st.expander("What is the SMA?"):
-        st.write("The Simple Moving Average (SMA) is a widely used technical indicator in financial analysis, particularly in the analysis of stock and other asset prices.")
+if symbol:
+    # Display the option to select technical indicators
+    option = st.radio('View technical indicators', ['SMA', 'EMA', 'Disabled'])
 
-elif option is 'EMA':
-    df_ema = loadEMA()
-    st.line_chart(df_ema['EMA'])
-    with st.expander("What is the EMA?"):
-        st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
+    if option == 'SMA':
+        df_sma = loadSMA()
+        st.line_chart(df_sma['SMA'])
+        with st.expander("What is the SMA?"):
+            st.write("The Simple Moving Average (SMA) is a widely used technical indicator in financial analysis, particularly in the analysis of stock and other asset prices.")
 
-if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = []
+    elif option == 'EMA':
+        df_ema = loadEMA()
+        st.line_chart(df_ema['EMA'])
+        with st.expander("What is the EMA?"):
+            st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
 
-# Text input for the ticker symbol
-ticker_symbol = st.text_input("Enter the ticker symbol")
+st.divider()
+st.subheader("Earnings Calendar")
+#THIS IS BROKEN, If you wanna try and fix go ahead if not just remove
+# if 'tickers' not in st.session_state:
+#     st.session_state['tickers'] = []
 
-# Button to add the ticker to the list
-if st.button("Add Ticker"):
-    if ticker_symbol:
-        if ticker_symbol not in st.session_state['tickers']:
-            st.session_state['tickers'].append(ticker_symbol)
-            st.success(f"Ticker {ticker_symbol} added!")
-        else:
-            st.warning(f"Ticker {ticker_symbol} is already in the list.")
-    else:
-        st.error("Please enter a ticker symbol.")
+# # Text input for the ticker symbol
+# ticker_symbol = st.text_input("Enter the ticker symbol")
+
+# # Button to add the ticker to the list
+# if st.button("Add Ticker"):
+#     if ticker_symbol:
+#         if ticker_symbol not in st.session_state['tickers']:
+#             st.session_state['tickers'].append(ticker_symbol)
+#             st.success(f"Ticker {ticker_symbol} added!")
+#         else:
+#             st.warning(f"Ticker {ticker_symbol} is already in the list.")
+#     else:
+#         st.error("Please enter a ticker symbol.")
 
 # Concatenate ticker symbols into a string
-tickers_str = ','.join(st.session_state['tickers'])
+# tickers_str = ','.join(st.session_state['tickers'])
 
-def advancedAnalytics(start_date, end_date):
-    url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
-    r = requests.get(url)
-    data = r.json()
+# def advancedAnalytics(start_date, end_date):
+#     url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
+#     r = requests.get(url)
+#     data = r.json()
 
-    if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
-        symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
-        df = pd.DataFrame(symbolAnalytics)
-        return df
-    else:
-        return pd.DataFrame()  # Return an empty DataFrame if no data
+#     if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
+#         symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
+#         df = pd.DataFrame(symbolAnalytics)
+#         return df
+#     else:
+#         return pd.DataFrame()  # Return an empty DataFrame if no data
 
-# Date range input
-d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
+# # Date range input
+# d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
 
-start_date, end_date = d
+# start_date, end_date = d
 
-if start_date and end_date:
-    analytics_df = advancedAnalytics(start_date, end_date)
-    if not analytics_df.empty:
-        st.table(analytics_df)
-    else:
-        st.error("No analytics data found for the selected date range.")
-else:
-    st.error("Please select a valid date range.")
+# if start_date and end_date:
+#     analytics_df = advancedAnalytics(start_date, end_date)
+#     if not analytics_df.empty:
+#         st.table(analytics_df)
+#     else:
+#         st.error("No analytics data found for the selected date range.")
+# else:
+#     st.error("Please select a valid date range.")
+#End of broken code
+
+horizon = st.selectbox('What horizon would you like to see?', ('3month', '6month', '12month'))
+
+def loadEarningsCalendar():
+    url = f'https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&symbol={symbol}&horizon={horizon}&apikey={api_key}'
+
+    with requests.Session() as s:
+        download = s.get(url)
+        decoded_content = download.content.decode('utf-8')
+        cr = csv.reader(decoded_content.splitlines(), delimiter=',')
+        my_list = list(cr)
+        df = pd.DataFrame(my_list[1:], columns=my_list[0])  # Assuming first row is header
+        st.dataframe(df)
+if symbol:
+    loadEarningsCalendar()
+
+
+
+
