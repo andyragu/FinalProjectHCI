@@ -6,6 +6,8 @@ import requests
 import alpha_vantage.timeseries as ts
 import plotly.graph_objs as go
 from datetime import date
+from geopy.geocoders import Nominatim
+import urllib.parse
 
 api_key="AGZF6FYUWEB9KXYS"
 
@@ -64,6 +66,14 @@ elif st.session_state.mode == 'Light':
         }
         </style>
         """, unsafe_allow_html=True)
+    
+def get_latitude_longitude(location_of_interest):
+    geolocator = Nominatim(user_agent="financity")
+    location = geolocator.geocode(location_of_interest)
+    if location:
+        return location.latitude, location.longitude
+    else:
+        return None, None
 
 col1, col2= st.columns(2)
 
@@ -79,7 +89,7 @@ with col1:
         data = fetch_financial_data(symbol)
         if data:
             # Define the keys you are interested in
-            keys_of_interest = ['Symbol', 'AssetType', 'Name', 'Sector', 'Industry', 'Country']
+            keys_of_interest = ['Symbol', 'AssetType', 'Name', 'Sector', 'Industry', 'Country', 'Address']
 
             # Extract these keys and values
             filtered_data = {key: data.get(key, 'N/A') for key in keys_of_interest}
@@ -87,6 +97,15 @@ with col1:
             # Convert filtered data to DataFrame
             df = pd.DataFrame([filtered_data])
             st.dataframe(df, hide_index=True)
+            
+            # Get latitude and longitude for the address
+            address = data.get('Address', None)
+            if address:
+                latitude, longitude = get_latitude_longitude(address)
+                map_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
+                st.map(map_data)
+            else:
+                st.write("No address available.")
 
             st.success(f"Successfully fetched data for {symbol.upper()}")
         else:
@@ -123,7 +142,7 @@ if symbol:
         st.warning("No historical stock data found for the given symbol.")
 
 def loadSMA():
-    url = f'https://www.alphavantage.co/query?function=SMA&symbol=IBM&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
+    url = f'https://www.alphavantage.co/query?function=SMA&symbol={symbol}&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
     r = requests.get(url)
 
     data = r.json()
@@ -136,7 +155,7 @@ def loadSMA():
     return df
 
 def loadEMA():
-    url = f'https://www.alphavantage.co/query?function=EMA&symbol=IBM&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
+    url = f'https://www.alphavantage.co/query?function=EMA&symbol={symbol}&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
     r = requests.get(url)
 
     data = r.json()
@@ -171,11 +190,15 @@ ticker_symbol = st.text_input("Enter the ticker symbol")
 # Button to add the ticker to the list
 if st.button("Add Ticker"):
     if ticker_symbol:
-        st.session_state['tickers'].append(ticker_symbol)
-        st.success(f"Ticker {ticker_symbol} added!")
+        if ticker_symbol not in st.session_state['tickers']:
+            st.session_state['tickers'].append(ticker_symbol)
+            st.success(f"Ticker {ticker_symbol} added!")
+        else:
+            st.warning(f"Ticker {ticker_symbol} is already in the list.")
     else:
         st.error("Please enter a ticker symbol.")
 
+# Concatenate ticker symbols into a string
 tickers_str = ','.join(st.session_state['tickers'])
 
 def advancedAnalytics(start_date, end_date):
@@ -183,18 +206,23 @@ def advancedAnalytics(start_date, end_date):
     r = requests.get(url)
     data = r.json()
 
-    symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
-    df = pd.DataFrame(symbolAnalytics)
-    return df
-
+    if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
+        symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
+        df = pd.DataFrame(symbolAnalytics)
+        return df
+    else:
+        return pd.DataFrame()  # Return an empty DataFrame if no data
 
 # Date range input
-d = st.date_input("Select the range in which you want to see the company's analytics",  value=(date.today(), date.today()), format="YYYY-MM-DD")
+d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
 
 start_date, end_date = d
 
 if start_date and end_date:
     analytics_df = advancedAnalytics(start_date, end_date)
-    st.table(analytics_df)
+    if not analytics_df.empty:
+        st.table(analytics_df)
+    else:
+        st.error("No analytics data found for the selected date range.")
 else:
     st.error("Please select a valid date range.")
