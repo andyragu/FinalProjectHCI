@@ -113,28 +113,30 @@ if symbol:
 if symbol:
 
     stock_data = fetch_stock_data(symbol)
-    
+
     if stock_data is not None:
         if not stock_data.empty:
             show_line_chart = st.checkbox("Show Line Graph", value=True)
 
             if show_line_chart:
+                line_color = st.color_picker("Choose Line Color", value="#1f77b4")
                 line_chart = go.Figure()
-                line_chart.add_trace(go.Scatter(x=stock_data.index, y=stock_data['4. close'], mode='lines', name='Closing Price'))
+                line_chart.add_trace(go.Scatter(x=stock_data.index, y=stock_data['4. close'], mode='lines', name='Closing Price', line=dict(color=line_color)))
                 line_chart.update_layout(title=f'Stock Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Stock Price')
                 st.plotly_chart(line_chart)
 
             show_volume_chart = st.checkbox("Show Volume Graph", value=True)
-            
-            if show_volume_chart:
-                    volume_chart = go.Figure()
-                    volume_chart.add_trace(go.Bar(x=stock_data.index, y=stock_data['5. volume'], name='Volume'))
-                    volume_chart.update_layout(title=f'Volume Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Volume')
-                    st.plotly_chart(volume_chart)
 
-        
-    else:
-        st.warning("No historical stock data found for the given symbol.")
+            if show_volume_chart:
+                volume_color = st.color_picker("Choose Volume Bar Color", value="#1f77b4")
+                volume_chart = go.Figure()
+                volume_chart.add_trace(go.Bar(x=stock_data.index, y=stock_data['5. volume'], name='Volume', marker=dict(color=volume_color)))
+                volume_chart.update_layout(title=f'Volume Chart for {symbol.upper()}', xaxis_title='Date', yaxis_title='Volume')
+                st.plotly_chart(volume_chart)
+
+        else:
+            st.warning("No historical stock data found for the given symbol.")
+
 
 def loadSMA():
     url = f'https://www.alphavantage.co/query?function=SMA&symbol={symbol}&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
