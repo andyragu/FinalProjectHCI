@@ -85,7 +85,12 @@ st.subheader(":blue[Let's Get Started!]")
 symbol = st.text_input('Enter a Ticker Symbol', '')
 
 d = st.date_input("Select the date range", value=(date.today() - timedelta(days=365), date.today()), format="YYYY-MM-DD")
-start_date, end_date = d
+
+if isinstance(d, tuple) and len(d) == 2:
+    start_date, end_date = d
+else:
+    st.error("Invalid date range selected. Please select a valid start and end date.")
+    start_date = end_date = None  # Setting to None to avoid further processing
 
 if symbol and start_date and end_date:
     data = fetch_financial_data(symbol)
@@ -183,54 +188,7 @@ if symbol:
         with st.expander("What is the EMA?"):
             st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
 
-st.divider()
-st.subheader("Advanced Analytics")
-st.caption("Compare companies which returns advanced analytics metrics")
-if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = []
 
-# # Text input for the ticker symbol
-ticker_symbol = st.text_input("Enter the ticker symbol")
-
-# # Button to add the ticker to the list
-if st.button("Add Ticker"):
-    if ticker_symbol:
-        if ticker_symbol not in st.session_state['tickers']:
-            st.session_state['tickers'].append(ticker_symbol)
-            st.success(f"Ticker {ticker_symbol} added!")
-        else:
-            st.warning(f"Ticker {ticker_symbol} is already in the list.")
-    else:
-        st.error("Please enter a ticker symbol.")
-
-# Concatenate ticker symbols into a string
-tickers_str = ','.join(st.session_state['tickers'])
-
-def advancedAnalytics(start_date, end_date):
-    url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
-    r = requests.get(url)
-    data = r.json()
-
-    if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
-        symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
-        df = pd.DataFrame(symbolAnalytics)
-        return df
-    else:
-        return pd.DataFrame()  # Return an empty DataFrame if no data
-
-# # Date range input
-d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
-
-start_date, end_date = d
-
-if start_date and end_date:
-    analytics_df = advancedAnalytics(start_date, end_date)
-    if not analytics_df.empty:
-        st.table(analytics_df)
-    else:
-        st.error("No analytics data found for the selected date range.")
-else:
-    st.error("Please select a valid date range.")
 
 st.divider()
 st.subheader("Earnings Calendar")
