@@ -43,7 +43,7 @@ st.set_page_config(
         
     
 def get_latitude_longitude(location_of_interest):
-    geolocator = Nominatim(user_agent="financity")
+    geolocator = Nominatim(user_agent="financity", timeout=10)
     location = geolocator.geocode(location_of_interest)
     if location:
         return location.latitude, location.longitude
@@ -87,8 +87,11 @@ if symbol:
         address = data.get('Address', None)
         if address:
             latitude, longitude = get_latitude_longitude(address)
-            map_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
-            st.map(map_data)
+            if latitude is not None and longitude is not None:
+                map_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
+                st.map(map_data)
+            else:
+                st.warning("Unable to find location for the given address.")
         else:
             st.write("No address available.")
 
