@@ -7,6 +7,7 @@ import alpha_vantage.timeseries as ts
 import plotly.graph_objs as go
 from datetime import date
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 import csv
 
 api_key="AGZF6FYUWEB9KXYS"
@@ -44,10 +45,20 @@ st.set_page_config(
     
 def get_latitude_longitude(location_of_interest):
     geolocator = Nominatim(user_agent="financity", timeout=10)
-    location = geolocator.geocode(location_of_interest)
-    if location:
-        return location.latitude, location.longitude
-    else:
+    try:
+        location = geolocator.geocode(location_of_interest)
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None, None
+    except GeocoderTimedOut:
+        st.error("Geocoding timed out. Please try again later.")
+        return None, None
+    except GeocoderUnavailable:
+        st.error("Geocoding service is unavailable. Please try again later.")
+        return None, None
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
         return None, None
 
 col1, col2= st.columns(2)
