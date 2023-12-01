@@ -82,7 +82,7 @@ with col2:
 st.divider()
 
 st.subheader(":blue[Let's Get Started!]")
-symbol = st.text_input('Ticker Symbol', '')
+symbol = st.text_input('Enter a Ticker Symbol', '')
 
 d = st.date_input("Select the date range", value=(date.today() - timedelta(days=365), date.today()), format="YYYY-MM-DD")
 start_date, end_date = d
@@ -137,6 +137,9 @@ if symbol and start_date and end_date:
         else:
             st.warning("No historical stock data found for the given symbol.")
 
+st.divider()
+st.subheader("Technical Indicators")
+
 def loadSMA():
     url = f'https://www.alphavantage.co/query?function=SMA&symbol={symbol}&interval=weekly&time_period=10&series_type=open&apikey={api_key}'
     r = requests.get(url)
@@ -181,54 +184,56 @@ if symbol:
             st.write("The Exponential Moving Average (EMA) is another key technical indicator used in financial markets, particularly in the analysis of stock, forex, and other tradable assets' prices.")
 
 st.divider()
-st.subheader("Earnings Calendar")
-#THIS IS BROKEN, If you wanna try and fix go ahead if not just remove
-# if 'tickers' not in st.session_state:
-#     st.session_state['tickers'] = []
+st.subheader("Advanced Analytics")
+st.caption("Compare companies which returns advanced analytics metrics")
+if 'tickers' not in st.session_state:
+    st.session_state['tickers'] = []
 
 # # Text input for the ticker symbol
-# ticker_symbol = st.text_input("Enter the ticker symbol")
+ticker_symbol = st.text_input("Enter the ticker symbol")
 
 # # Button to add the ticker to the list
-# if st.button("Add Ticker"):
-#     if ticker_symbol:
-#         if ticker_symbol not in st.session_state['tickers']:
-#             st.session_state['tickers'].append(ticker_symbol)
-#             st.success(f"Ticker {ticker_symbol} added!")
-#         else:
-#             st.warning(f"Ticker {ticker_symbol} is already in the list.")
-#     else:
-#         st.error("Please enter a ticker symbol.")
+if st.button("Add Ticker"):
+    if ticker_symbol:
+        if ticker_symbol not in st.session_state['tickers']:
+            st.session_state['tickers'].append(ticker_symbol)
+            st.success(f"Ticker {ticker_symbol} added!")
+        else:
+            st.warning(f"Ticker {ticker_symbol} is already in the list.")
+    else:
+        st.error("Please enter a ticker symbol.")
 
 # Concatenate ticker symbols into a string
-# tickers_str = ','.join(st.session_state['tickers'])
+tickers_str = ','.join(st.session_state['tickers'])
 
-# def advancedAnalytics(start_date, end_date):
-#     url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
-#     r = requests.get(url)
-#     data = r.json()
+def advancedAnalytics(start_date, end_date):
+    url = f'https://alphavantageapi.co/timeseries/analytics?SYMBOLS={tickers_str}&RANGE={start_date}&RANGE={end_date}&INTERVAL=DAILY&OHLC=close&CALCULATIONS=MEAN,STDDEV,CORRELATION&apikey={api_key}'
+    r = requests.get(url)
+    data = r.json()
 
-#     if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
-#         symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
-#         df = pd.DataFrame(symbolAnalytics)
-#         return df
-#     else:
-#         return pd.DataFrame()  # Return an empty DataFrame if no data
+    if 'payload' in data and 'RETURNS_CALCULATIONS' in data['payload']:
+        symbolAnalytics = data['payload']['RETURNS_CALCULATIONS']
+        df = pd.DataFrame(symbolAnalytics)
+        return df
+    else:
+        return pd.DataFrame()  # Return an empty DataFrame if no data
 
 # # Date range input
-# d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
+d = st.date_input("Select the range in which you want to see the company's analytics", value=(date.today(), date.today()), format="YYYY-MM-DD")
 
-# start_date, end_date = d
+start_date, end_date = d
 
-# if start_date and end_date:
-#     analytics_df = advancedAnalytics(start_date, end_date)
-#     if not analytics_df.empty:
-#         st.table(analytics_df)
-#     else:
-#         st.error("No analytics data found for the selected date range.")
-# else:
-#     st.error("Please select a valid date range.")
-#End of broken code
+if start_date and end_date:
+    analytics_df = advancedAnalytics(start_date, end_date)
+    if not analytics_df.empty:
+        st.table(analytics_df)
+    else:
+        st.error("No analytics data found for the selected date range.")
+else:
+    st.error("Please select a valid date range.")
+
+st.divider()
+st.subheader("Earnings Calendar")
 
 horizon = st.selectbox('What horizon would you like to see?', ('3month', '6month', '12month'))
 
