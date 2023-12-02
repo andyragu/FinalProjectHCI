@@ -1,1 +1,5 @@
 streamlit-lottie
+alpha_vantage
+plotly
+datetime
+geopy
